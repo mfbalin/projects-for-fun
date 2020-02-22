@@ -5,12 +5,12 @@
 
 class timer {
 private:
-	static std::mutex iomutex;
 	const std::string name;
 	const std::chrono::high_resolution_clock::time_point start;
 	std::mutex &mtx;
 	std::ostream &os;
 public:
+	static std::mutex iomutex;
 	timer(std::string s, std::mutex &_mtx = iomutex, std::ostream &_os = std::cerr) : name(s), start(std::chrono::high_resolution_clock::now()), mtx(_mtx), os(_os) {
 		std::lock_guard<std::mutex> lock(mtx);
 		os << name << " has started" << std::endl;
@@ -54,12 +54,18 @@ auto get_ptr(const char *begin, const char *end, unsigned rank, unsigned size) {
 	std::advance(ptr, rank * std::distance(begin, end) / size);
 	while(ptr != begin && ptr != end && index_of(*ptr) != -1)
 		ptr++;
+	if(ptr != end && index_of(*ptr) == -1)
+		ptr++;
 	return ptr;
 }
 
 void make_trie(trie &root, std::atomic<trie *> &bump, char *global_begin, char *global_end, unsigned rank, unsigned size) {
 	auto begin = get_ptr(global_begin, global_end, rank, size);
 	auto end = get_ptr(global_begin, global_end, rank + 1, size);
+	/*{
+		std::lock_guard lock(timer::iomutex);
+		std::cerr << rank << "<<<\n" << std::string(begin, end) << "\n<<<\n";
+	}*/
 	auto local_bump = bump.fetch_add(1, std::memory_order_relaxed);
 	auto n = &root;
 	for(auto pc = begin; pc != end; pc++) {
@@ -71,8 +77,8 @@ void make_trie(trie &root, std::atomic<trie *> &bump, char *global_begin, char *
 			}
 			continue;
 		}
-		trie *next = nullptr;
-		if(n->next[idx].ptr.compare_exchange_strong(next, local_bump, std::memory_order_release, std::memory_order_acquire)) {
+		trie *next = n->next[idx].ptr.load(std::memory_order_acquire);
+		if(next == nullptr && n->next[idx].ptr.compare_exchange_strong(next, local_bump, std::memory_order_release, std::memory_order_acquire)) {
 			n = local_bump;
 			local_bump = bump.fetch_add(1, std::memory_order_relaxed);
 		}
@@ -144,7 +150,7 @@ int main(int argc, char *argv[]) {
 
 	auto word_cnts = word_counts(root);
 	std::cout << word_cnts.size() << '\n';
-	// for(const auto &[word, cnt]: word_counts(root))
-		// std::cout << word << ' ' << cnt << '\n';
+	for(const auto &[word, cnt]: word_counts(root))
+		std::cout << word << ' ' << cnt << '\n';
 	return 0;
 }
