@@ -131,11 +131,10 @@ int main(int argc, char *argv[]) {
 
 	std::ios_base::sync_with_stdio(false);
 	std::string s{std::istreambuf_iterator<char>(std::cin), std::istreambuf_iterator<char>()};//{"fatih balin"};
-	std::cerr << s.size() << std::endl;
 
 	std::vector<trie> memory_pool(1 << 24);
 	std::atomic<trie *> bump{memory_pool.data()};
-	
+
 	trie root;
 	{
 		timer t(std::to_string(num_threads) + " threaded trie construction of a text of length " + std::to_string(s.size()));
