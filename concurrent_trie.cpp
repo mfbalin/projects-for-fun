@@ -148,8 +148,6 @@ int main(int argc, char *argv[]) {
 			t.join();
 	}
 
-	auto word_cnts = word_counts(root);
-	std::cout << word_cnts.size() << '\n';
 	for(const auto &[word, cnt]: word_counts(root))
 		std::cout << word << ' ' << cnt << '\n';
 	return 0;
