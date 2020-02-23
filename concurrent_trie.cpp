@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 	
 	trie root;
 	{
-		timer t(std::to_string(num_threads) + " threaded trie construction of a text of size " + std::to_string(s.size()));
+		timer t(std::to_string(num_threads) + " threaded trie construction of a text of length " + std::to_string(s.size()));
 
 		std::vector<std::thread> threads;
 		for(unsigned i = 0; i < num_threads; i++)
